@@ -90,17 +90,19 @@ What's left at this point, is to wrap it all up in a controller and point the in
 If are using saml:AttributeStatement to transfare metadata, like the user name, you can access all the attributes through response.attributes. It
 contains all the saml:AttributeStatement with its 'Name' as a indifferent key and the one saml:AttributeValue as value.
 
+```ruby
   response          = Onelogin::Saml::Response.new(params[:SAMLResponse])
   response.settings = saml_settings
 
   response.attributes[:username]
+```
 
 ## Service Provider Metadata
 
 To form a trusted pair relationship with the IdP, the SP (you) need to provide metadata XML
-to the IdP for various good reasons.  (Caching, certificate lookups, relying party permissions, etc)
+to the IdP for various good reasons.  (Caching, certificate lookups, relaying party permissions, etc)
 
-The class Onelogin::Saml::Metdata takes care of this by reading the Settings and returning XML.  All
+The class Onelogin::Saml::Metadata takes care of this by reading the Settings and returning XML.  All
 you have to do is add a controller to return the data, then give this URL to the IdP administrator.
 The metdata will be polled by the IdP every few minutes, so updating your settings should propagate
 to the IdP settings.
