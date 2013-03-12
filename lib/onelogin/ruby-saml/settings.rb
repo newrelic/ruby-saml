@@ -1,5 +1,12 @@
 module Onelogin
   module Saml
+
+    class PermissiveTimeRangeValidator
+      def valid?(begin_time, end_time)
+        true
+      end
+    end
+
     class Settings
       def initialize(overrides = {})
         config = DEFAULTS.merge(overrides)
@@ -17,10 +24,11 @@ module Onelogin
       attr_accessor :assertion_consumer_logout_service_url
       attr_accessor :compress_request
       attr_accessor :double_quote_xml_attribute_values
+      attr_accessor :time_range_validator
 
       private
       
-      DEFAULTS = {:compress_request => true, :double_quote_xml_attribute_values => false}
+      DEFAULTS = {:compress_request => true, :double_quote_xml_attribute_values => false, :time_range_validator => PermissiveTimeRangeValidator.new}
     end
   end
 end
