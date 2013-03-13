@@ -111,11 +111,8 @@ module Onelogin
         validate_response_state(soft) &&
         validate_conditions(soft)     &&
         document.validate(get_fingerprint, soft) && 
-<<<<<<< HEAD
         validate_new_assertion_id(soft) &&
-=======
         validate_time_range(soft)     &&
->>>>>>> d612b73... custom validation of the time range
         success?
       end
 
