@@ -41,6 +41,20 @@ module Onelogin
         end
       end
 
+      def recipient
+        @name_id ||= begin
+          node = xpath_first_from_signed_assertion('/a:Subject/a:SubjectConfirmation/a:SubjectConfirmationData')
+          node.nil? ? nil : node.attributes['Recipient']
+        end
+      end
+
+      def destination
+        @issuer ||= begin
+          node = REXML::XPath.first(document, "/p:Response", { "p" => PROTOCOL })
+          node.nil? ? nil : node.attributes['Destination']
+        end
+      end
+
       def sessionindex
         @sessionindex ||= begin
           node = xpath_first_from_signed_assertion('/a:AuthnStatement')
@@ -107,6 +121,7 @@ module Onelogin
       end
 
       def validate(soft = true)
+        validate_destination_and_recipient(soft) &&
         validate_structure(soft)      &&
         validate_response_state(soft) &&
         validate_conditions(soft)     &&
@@ -114,6 +129,35 @@ module Onelogin
         validate_new_assertion_id(soft) &&
         validate_time_range(soft)     &&
         success?
+      end
+
+      def validate_destination_and_recipient(soft = true)
+        success = destination == settings.assertion_consumer_service_url &&
+                    recipient   == settings.assertion_consumer_service_url
+        record_recipient_match_metric("destination_found", !!destination)
+        record_recipient_match_metric("recipient_found", !!recipient)
+        record_recipient_match_metric("destination_and_recipient_match", !!destination && !!recipient)
+        record_recipient_match_metric("destination_and_recipient_and_assertion_url_match", success)
+        unless soft
+          unless success
+            # TODO use validation_error instead once we know we like the change
+            NewRelic::Agent.notice_error("KWu and Merlyn were wrong - destination == recipient == assertion_consumer_service_url invalid",
+              {
+                :SAMLResponse                   => @response,
+                :destination                    => destination,
+                :recipient                      => recipient,
+                :assertion_consumer_service_url => settings.assertion_consumer_service_url
+              })
+          end
+        end
+        
+        # TODO really allow this validation to fail:
+        #return success
+        true
+      end
+
+      def record_recipient_match_metric(name, success)
+        NewRelic::Agent.record_metric("Custom/SAML/recipient_match/#{name}", success ? 1.0 : 0.0);
       end
 
       # validate the time range using the validator (settings)
