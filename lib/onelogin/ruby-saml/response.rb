@@ -42,14 +42,14 @@ module Onelogin
       end
 
       def recipient
-        @name_id ||= begin
+        @recipient ||= begin
           node = xpath_first_from_signed_assertion('/a:Subject/a:SubjectConfirmation/a:SubjectConfirmationData')
           node.nil? ? nil : node.attributes['Recipient']
         end
       end
 
       def destination
-        @issuer ||= begin
+        @destination ||= begin
           node = REXML::XPath.first(document, "/p:Response", { "p" => PROTOCOL })
           node.nil? ? nil : node.attributes['Destination']
         end
