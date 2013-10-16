@@ -44,15 +44,19 @@ module Onelogin
       def recipient
         @recipient ||= begin
           node = xpath_first_from_signed_assertion('/a:Subject/a:SubjectConfirmation/a:SubjectConfirmationData')
-          node.nil? ? nil : node.attributes['Recipient']
+          node.nil? ? nil : remove_port(node.attributes['Recipient'])
         end
       end
 
       def destination
         @destination ||= begin
           node = REXML::XPath.first(document, "/p:Response", { "p" => PROTOCOL })
-          node.nil? ? nil : node.attributes['Destination']
+          node.nil? ? nil : remove_port(node.attributes['Destination'])
         end
+      end
+
+      def remove_port(url)
+        url.sub(/(\A[^\/]+\/\/[^:]+):\d+/, '\1')
       end
 
       def sessionindex
@@ -92,7 +96,7 @@ module Onelogin
           parse_time(node, "SessionNotOnOrAfter")
         end
       end
-      
+
       # Checks the status of the response for a "Success" code
       def success?
         @status_code ||= begin
@@ -125,7 +129,7 @@ module Onelogin
         validate_structure(soft)      &&
         validate_response_state(soft) &&
         validate_conditions(soft)     &&
-        document.validate(get_fingerprint, soft) && 
+        document.validate(get_fingerprint, soft) &&
         validate_new_assertion_id(soft) &&
         validate_time_range(soft)     &&
         success?
@@ -150,7 +154,7 @@ module Onelogin
               })
           end
         end
-        
+
         # TODO really allow this validation to fail:
         #return success
         true
