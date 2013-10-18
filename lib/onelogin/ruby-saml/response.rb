@@ -56,7 +56,7 @@ module Onelogin
       end
 
       def remove_port(url)
-        url.sub(/(\A[^\/]+\/\/[^:]+):\d+/, '\1')
+        url.nil? ? nil : url.sub(/(\A[^\/]+\/\/[^:]+):\d+/, '\1')
       end
 
       def sessionindex
