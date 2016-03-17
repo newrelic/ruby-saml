@@ -1,6 +1,7 @@
 require File.expand_path(File.join(File.dirname(__FILE__), "test_helper"))
 
-<<<<<<< HEAD
+require 'onelogin/ruby-saml/response'
+
 class FailingAssertionIdValidator
   def valid?(id)
     false
@@ -24,11 +25,6 @@ class FailingDestinationValidator
     false
   end
 end
-
-class RubySamlTest < Test::Unit::TestCase
-=======
-require 'onelogin/ruby-saml/response'
->>>>>>> onelogin/master
 
 class RubySamlTest < Minitest::Test
 
@@ -179,6 +175,45 @@ class RubySamlTest < Minitest::Test
           response_unsigned_mod.soft = false
           assert_raises(OneLogin::RubySaml::ValidationError, 'Digest mismatch') do
             response_unsigned_mod.is_valid?
+          end
+        end
+
+        context "with custom validators" do
+          setup do
+            @response = OneLogin::RubySaml::Response.new(fixture("no_signature_ns.xml"))
+            @response.stubs(:conditions).returns(nil)
+            @settings = OneLogin::RubySaml::Settings.new
+            @response.settings = @settings
+            @settings.idp_cert_fingerprint = "28:74:9B:E8:1F:E8:10:9C:A8:7C:A9:C3:E3:C5:01:6C:92:1C:B4:BA"
+            XMLSecurity::SignedDocument.any_instance.stubs(:validate_doc).returns(true)
+          end
+
+          should "fail assertion id validation appropriately" do
+            @settings.assertion_id_validator = FailingAssertionIdValidator.new
+            assert_raises(OneLogin::RubySaml::ValidationError, 'Assertion ID can be use only once') do
+              @response.validate!
+            end
+          end
+
+          should "fail time range validation appropriately" do
+            @settings.time_range_validator = FailingTimeRangeValidator.new
+            assert_raises(OneLogin::RubySaml::ValidationError, 'Time range validation failed') do
+              @response.validate!
+            end
+          end
+
+          should "fail recipient validation appropriately" do
+            @settings.recipient_validator = FailingRecipientValidator.new
+            assert_raises(OneLogin::RubySaml::ValidationError, 'Recipient and assertion consumer URL must match') do
+              @response.validate!
+            end
+          end
+
+          should "fail destination validation appropriately" do
+            @settings.destination_validator = FailingDestinationValidator.new
+            assert_raises(OneLogin::RubySaml::ValidationError, 'Destination and assertion consumer URL must match') do
+              @response.validate!
+            end
           end
         end
 
@@ -765,46 +800,6 @@ class RubySamlTest < Minitest::Test
         assert_includes response_valid_signed_without_x509certificate.errors, "Invalid Signature on SAML Response"        
       end
 
-<<<<<<< HEAD
-      context "with custom validators" do
-        setup do
-          @response = OneLogin::RubySaml::Response.new(fixture("no_signature_ns.xml"))
-          @response.stubs(:conditions).returns(nil)
-          @settings = OneLogin::RubySaml::Settings.new
-          @response.settings = @settings
-          @settings.idp_cert_fingerprint = "28:74:9B:E8:1F:E8:10:9C:A8:7C:A9:C3:E3:C5:01:6C:92:1C:B4:BA"
-          XMLSecurity::SignedDocument.any_instance.stubs(:validate_doc).returns(true)
-        end
-
-        should "fail assertion id validation appropriately" do
-          @settings.assertion_id_validator = FailingAssertionIdValidator.new
-          assert_raises(OneLogin::RubySaml::ValidationError, 'Assertion ID can be use only once') do
-            @response.validate!
-          end
-        end
-
-        should "fail time range validation appropriately" do
-          @settings.time_range_validator = FailingTimeRangeValidator.new
-          assert_raises(OneLogin::RubySaml::ValidationError, 'Time range validation failed') do
-            @response.validate!
-          end
-        end
-
-        should "fail recipient validation appropriately" do
-          @settings.recipient_validator = FailingRecipientValidator.new
-          assert_raises(OneLogin::RubySaml::ValidationError, 'Recipient and assertion consumer URL must match') do
-            @response.validate!
-          end
-        end
-
-        should "fail destination validation appropriately" do
-          @settings.destination_validator = FailingDestinationValidator.new
-          assert_raises(OneLogin::RubySaml::ValidationError, 'Destination and assertion consumer URL must match') do
-            @response.validate!
-          end
-        end
-      end
-=======
       it "return true when no X509Certificate and the cert provided at settings matches" do
         settings.idp_cert_fingerprint = nil
         settings.idp_cert = ruby_saml_cert_text
@@ -823,7 +818,6 @@ class RubySamlTest < Minitest::Test
         assert !response_wrapped.send(:validate_signature)
         assert_includes response_wrapped.errors, "Invalid Signature on SAML Response"
        end
->>>>>>> onelogin/master
     end
 
     describe "#nameid" do

@@ -5,7 +5,7 @@ require "onelogin/ruby-saml/utils"
 # Only supports SAML 2.0
 module OneLogin
   module RubySaml
-<<<<<<< HEAD
+
     class PermissiveAssertionIdValidator
       def valid?(id)
         true
@@ -30,11 +30,6 @@ module OneLogin
       end
     end
 
-=======
-
-    # SAML2 Toolkit Settings
-    #
->>>>>>> onelogin/master
     class Settings
       def initialize(overrides = {})
         config = DEFAULTS.merge(overrides)
@@ -69,24 +64,10 @@ module OneLogin
       attr_accessor :passive
       attr_accessor :protocol_binding
       attr_accessor :attributes_index
-<<<<<<< HEAD
       attr_accessor :assertion_id_validator
       attr_accessor :time_range_validator
-      attr_accessor :passive
       attr_accessor :destination_validator
       attr_accessor :recipient_validator
-      
-      private
-
-      DEFAULTS = {
-        :compress_request                  => true,
-        :double_quote_xml_attribute_values => false,
-        :assertion_id_validator            => PermissiveAssertionIdValidator.new,
-        :time_range_validator              => PermissiveTimeRangeValidator.new,
-        :recipient_validator               => PermissiveRecipientValidator.new,
-        :destination_validator             => PermissiveDestinationValidator.new
-      }
-=======
       attr_accessor :force_authn
       attr_accessor :certificate
       attr_accessor :private_key
@@ -194,6 +175,10 @@ module OneLogin
         :compress_request                          => true,
         :compress_response                         => true,
         :soft                                      => true,
+        :assertion_id_validator            => PermissiveAssertionIdValidator.new,
+        :time_range_validator              => PermissiveTimeRangeValidator.new,
+        :recipient_validator               => PermissiveRecipientValidator.new,
+        :destination_validator             => PermissiveDestinationValidator.new,
         :security                                  => {
           :authn_requests_signed    => false,
           :logout_requests_signed   => false,
@@ -205,7 +190,6 @@ module OneLogin
         }.freeze,
         :double_quote_xml_attribute_values         => false,
       }.freeze
->>>>>>> onelogin/master
     end
   end
 end

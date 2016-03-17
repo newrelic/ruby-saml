@@ -30,6 +30,7 @@ require 'nokogiri'
 require "digest/sha1"
 require "digest/sha2"
 require "onelogin/ruby-saml/validation_error"
+require "pry"
 
 module XMLSecurity
 
@@ -183,14 +184,10 @@ module XMLSecurity
     attr_accessor :signed_element_id
     attr_accessor :errors
 
-<<<<<<< HEAD
-        digest_algorithm              = algorithm(REXML::XPath.first(ref, "//ds:DigestMethod", 'ds' => DSIG))
-=======
     def initialize(response, errors = [])
       super(response)
       @errors = errors
     end
->>>>>>> onelogin/master
 
     def signed_element_id
       @signed_element_id ||= extract_signed_element_id
@@ -206,6 +203,7 @@ module XMLSecurity
 
       if cert_element        
         base64_cert = cert_element.text
+
         cert_text = Base64.decode64(base64_cert)
         cert = OpenSSL::X509::Certificate.new(cert_text)
 

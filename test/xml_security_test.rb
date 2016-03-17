@@ -62,20 +62,6 @@ class XmlSecurityTest < Minitest::Test
       assert_includes mod_document.errors, "Key validation error"
     end
 
-<<<<<<< HEAD
-    should "correctly obtain the digest method with alternate namespace declaration" do
-      document = XMLSecurity::SignedDocument.new(fixture(:adfs_response_xmlns, false))
-      base64cert = document.elements["//X509Certificate"].text
-      document.validate_signature(base64cert, false)
-    end
-
-    should "raise validation error when the X509Certificate is missing" do
-      response = Base64.decode64(response_document)
-      response.sub!(/<ds:X509Certificate>.*<\/ds:X509Certificate>/, "")
-      document = XMLSecurity::SignedDocument.new(response)
-      exception = assert_raise(OneLogin::RubySaml::ValidationError) do
-        document.validate_document("a fingerprint", false) # The fingerprint isn't relevant to this test
-=======
     it "correctly obtain the digest method with alternate namespace declaration" do
       adfs_document = XMLSecurity::SignedDocument.new(fixture(:adfs_response_xmlns, false))
       base64cert = adfs_document.elements["//X509Certificate"].text
@@ -87,7 +73,6 @@ class XmlSecurityTest < Minitest::Test
       mod_document = XMLSecurity::SignedDocument.new(decoded_response)
       exception = assert_raises(OneLogin::RubySaml::ValidationError) do
         mod_document.validate_document("a fingerprint", false) # The fingerprint isn't relevant to this test
->>>>>>> onelogin/master
       end
       assert_equal("Certificate element missing in response (ds:X509Certificate) and not cert provided at settings", exception.message)
     end

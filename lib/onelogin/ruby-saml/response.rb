@@ -4,6 +4,7 @@ require "onelogin/ruby-saml/attributes"
 require "time"
 require "nokogiri"
 
+require "pry"
 # Only supports SAML 2.0
 module OneLogin
   module RubySaml
@@ -62,7 +63,8 @@ module OneLogin
 
       # Append the cause to the errors array, and based on the value of soft, return false or raise
       # an exception
-      def append_error(error_msg)
+      def append_error(error_msg, soft=nil)
+        soft = self.soft if soft.nil?
         @errors << error_msg
         return soft ? false : validation_error(error_msg)
       end
@@ -93,7 +95,8 @@ module OneLogin
         end
       end
 
-<<<<<<< HEAD
+      alias_method :nameid, :name_id
+
       def recipient
         @recipient ||= begin
           node = xpath_first_from_signed_assertion('/a:Subject/a:SubjectConfirmation/a:SubjectConfirmationData')
@@ -108,17 +111,12 @@ module OneLogin
         end
       end
 
-=======
-      alias_method :nameid, :name_id
-
-
       # Gets the SessionIndex from the AuthnStatement.
       # Could be used to be stored in the local session in order
       # to be used in a future Logout Request that the SP could
       # send to the IdP, to set what specific session must be deleted
       # @return [String] SessionIndex Value
       #
->>>>>>> onelogin/master
       def sessionindex
         @sessionindex ||= begin
           node = xpath_first_from_signed_assertion('/a:AuthnStatement')
@@ -305,46 +303,45 @@ module OneLogin
         return options[:allowed_clock_drift] || 0
       end
 
-      private
+      
 
       # Validates the SAML Response (calls several validation methods)
       # @return [Boolean] True if the SAML Response is valid, otherwise False if soft=True
       # @raise [ValidationError] if soft == false and validation fails
       #
-      def validate
-        reset_errors!
+      def validate!
+        validate(false)
+      end
 
+      def validate(soft = true)
+        #@soft = soft
+        reset_errors!
+        validate_structure &&
         validate_response_state &&
+        validate_conditions(soft) &&
+        validate_recipient(soft)        &&
+        validate_destination(soft)      &&
+        validate_new_assertion_id(soft) &&
+        validate_time_range(soft)       &&
         validate_version &&
         validate_id &&
         validate_success_status &&
         validate_num_assertion &&
         validate_no_encrypted_attributes &&
-        validate_signed_elements &&
-        validate_structure &&
+        validate_signed_elements &&  
         validate_in_response_to &&
-        validate_conditions &&
-        validate_audience &&
-        validate_destination &&
         validate_issuer &&
         validate_session_expiration &&
         validate_subject_confirmation &&
-        validate_signature
+  #      validate_structure(soft)        &&
+  #      validate_response_state(soft)   &&
+  #      validate_conditions(soft)       &&
+        validate_signature(soft) &&
+        validate_audience
       end
 
-<<<<<<< HEAD
-      def validate(soft = true)
-        validate_structure(soft)        &&
-        validate_response_state(soft)   &&
-        validate_conditions(soft)       &&
-        validate_recipient(soft)        &&
-        validate_destination(soft)      &&
-        validate_new_assertion_id(soft) &&
-        validate_time_range(soft)       &&
-        document.validate_document(get_fingerprint, soft) &&
-        success?
-      end
-
+      private
+      
       def validate_recipient(soft = true)
         valid = settings.recipient_validator.valid?(recipient, settings.assertion_consumer_service_url)
         unless valid
@@ -353,15 +350,6 @@ module OneLogin
         true
       end
 
-      def validate_destination(soft = true)
-        valid = settings.destination_validator.valid?(destination, settings.assertion_consumer_service_url)
-        unless valid
-          return soft ? false : validation_error('Destination and assertion consumer URL must match')
-        end
-        true
-      end
-
-      # validate the time range using the validator (settings)
       def validate_time_range(soft = true)
         begin_time = parse_time(conditions, "NotBefore")
         end_time = parse_time(conditions, "NotOnOrAfter")
@@ -372,12 +360,42 @@ module OneLogin
         true
       end
 
-      def validate_structure(soft = true)
-        Dir.chdir(File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'schemas'))) do
-          @schema = Nokogiri::XML::Schema(IO.read('saml20protocol_schema.xsd'))
-          @xml = Nokogiri::XML(self.document.to_s)
-=======
+      def assertion_id
+        document.signed_element_id
+      end
 
+      # validate that we use the assertion id only once
+      def validate_new_assertion_id(soft = true)
+        valid = settings.assertion_id_validator.valid?(assertion_id)
+        unless valid
+          return soft ? false : validation_error("Assertion ID can be use only once")
+        end
+        true
+      end
+
+      def validate_destination(soft = true)
+       valid = settings.destination_validator.valid?(destination, settings.assertion_consumer_service_url)
+        unless valid
+          return soft ? false : validation_error('Destination and assertion consumer URL must match')
+        end
+        true
+      end
+
+
+            # Validates the Destination, (If the SAML Response is received where expected)
+      # If fails, the error is added to the errors array
+      # @return [Boolean] True if there is a Destination element that matches the Consumer Service URL, otherwise False
+      #
+#      def validate_destination
+#        return true if destination.nil? || destination.empty? || settings.assertion_consumer_service_url.nil? || settings.assertion_consumer_service_url.empty?
+#
+#        unless destination == settings.assertion_consumer_service_url
+#          error_msg = "The response was received at #{destination} instead of #{settings.assertion_consumer_service_url}"
+#          return append_error(error_msg)
+#        end
+#
+#        true
+#      end
       # Validates the Status of the SAML Response
       # @return [Boolean] True if the SAML Response contains a Success code, otherwise False if soft == false
       # @raise [ValidationError] if soft == false and validation fails
@@ -397,7 +415,6 @@ module OneLogin
       def validate_structure
         unless valid_saml?(document, soft)
           return append_error("Invalid SAML Response. Not match the saml-schema-protocol-2.0.xsd")
->>>>>>> onelogin/master
         end
 
         true
@@ -480,27 +497,6 @@ module OneLogin
         true
       end
 
-<<<<<<< HEAD
-      def assertion_id
-        document.signed_element_id
-      end
-
-      # validate that we use the assertion id only once
-      def validate_new_assertion_id(soft = true)
-        valid = settings.assertion_id_validator.valid?(assertion_id)
-        unless valid
-          return soft ? false : validation_error("Assertion ID can be use only once")
-        end
-        true
-      end
-
-      def get_fingerprint
-        if settings.idp_cert
-          cert = OpenSSL::X509::Certificate.new(settings.idp_cert)
-          Digest::SHA1.hexdigest(cert.to_der).upcase.scan(/../).join(":")
-        else
-          settings.idp_cert_fingerprint
-=======
 
       # Validates the Signed elements
       # If fails, the error is added to the errors array
@@ -520,7 +516,6 @@ module OneLogin
             return append_error("Found an unexpected Signature Element. SAML Response rejected")
           end
           signed_elements << signed_element
->>>>>>> onelogin/master
         end
 
         unless signature_nodes.length < 3 && !signed_elements.empty?
@@ -560,40 +555,28 @@ module OneLogin
         true
       end
 
-      # Validates the Destination, (If the SAML Response is received where expected)
-      # If fails, the error is added to the errors array
-      # @return [Boolean] True if there is a Destination element that matches the Consumer Service URL, otherwise False
-      #
-      def validate_destination
-        return true if destination.nil? || destination.empty? || settings.assertion_consumer_service_url.nil? || settings.assertion_consumer_service_url.empty?
 
-        unless destination == settings.assertion_consumer_service_url
-          error_msg = "The response was received at #{destination} instead of #{settings.assertion_consumer_service_url}"
-          return append_error(error_msg)
-        end
-
-        true
-      end
 
       # Validates the Conditions. (If the response was initialized with the :skip_conditions option, this validation is skipped,
       # If the response was initialized with the :allowed_clock_drift option, the timing validations are relaxed by the allowed_clock_drift value)
       # @return [Boolean] True if satisfies the conditions, otherwise False if soft=True
       # @raise [ValidationError] if soft == false and validation fails
       #
-      def validate_conditions
+      def validate_conditions (soft)
+        
         return true if conditions.nil?
         return true if options[:skip_conditions]
 
         now = Time.now.utc
 
-        if not_before && (now + allowed_clock_drift) < not_before
+        if not_before && (now + allowed_clock_drift) < not_before 
           error_msg = "Current time is earlier than NotBefore condition #{(now + allowed_clock_drift)} < #{not_before})"
-          return append_error(error_msg)
+          return append_error(error_msg, soft)
         end
-
-        if not_on_or_after && now >= (not_on_or_after + allowed_clock_drift)
+        #binding.pry
+        if not_on_or_after && now >= (not_on_or_after)
           error_msg = "Current time is on or after NotOnOrAfter condition (#{now} >= #{not_on_or_after + allowed_clock_drift})"
-          return append_error(error_msg)
+          return append_error(error_msg, soft)
         end
 
         true
@@ -684,7 +667,7 @@ module OneLogin
       # @return [Boolean] True if not contains a Signature or if the Signature is valid, otherwise False if soft=True
       # @raise [ValidationError] if soft == false and validation fails
       #
-      def validate_signature
+      def validate_signature(soft = true)
         error_msg = "Invalid Signature on SAML Response"
 
         # If the response contains the signature, and the assertion was encrypted, validate the original SAML Response
@@ -716,7 +699,7 @@ module OneLogin
         opts[:cert] = settings.get_idp_cert
         fingerprint = settings.get_fingerprint
 
-        unless fingerprint && doc.validate_document(fingerprint, @soft, opts)          
+        unless fingerprint && doc.validate_document(fingerprint, soft, opts)          
           return append_error(error_msg)
         end
 
