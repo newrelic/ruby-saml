@@ -1,6 +1,6 @@
 #encoding: utf-8
 
-def default_response_opts
+def default_logout_response_opts
   {
       :uuid => "_28024690-000e-0130-b6d2-38f6b112be8b",
       :issue_instant => Time.now.strftime('%Y-%m-%dT%H:%M:%SZ'),
@@ -8,14 +8,14 @@ def default_response_opts
   }
 end
 
-def valid_response(opts = {})
-  opts = default_response_opts.merge!(opts)
+def valid_logout_response_document(opts = {})
+  opts = default_logout_response_opts.merge(opts)
 
   "<samlp:LogoutResponse
         xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\"
         ID=\"#{random_id}\" Version=\"2.0\"
         IssueInstant=\"#{opts[:issue_instant]}\"
-        Destination=\"#{opts[:settings].assertion_consumer_logout_service_url}\"
+        Destination=\"#{opts[:settings].single_logout_service_url}\"
         InResponseTo=\"#{opts[:uuid]}\">
       <saml:Issuer xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">#{opts[:settings].issuer}</saml:Issuer>
       <samlp:Status xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\">
@@ -26,14 +26,14 @@ def valid_response(opts = {})
       </samlp:LogoutResponse>"
 end
 
-def unsuccessful_response(opts = {})
-  opts = default_response_opts.merge!(opts)
+def unsuccessful_logout_response_document(opts = {})
+  opts = default_logout_response_opts.merge(opts)
 
   "<samlp:LogoutResponse
         xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\"
         ID=\"#{random_id}\" Version=\"2.0\"
         IssueInstant=\"#{opts[:issue_instant]}\"
-        Destination=\"#{opts[:settings].assertion_consumer_logout_service_url}\"
+        Destination=\"#{opts[:settings].single_logout_service_url}\"
         InResponseTo=\"#{opts[:uuid]}\">
       <saml:Issuer xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">#{opts[:settings].issuer}</saml:Issuer>
       <samlp:Status xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\">
@@ -44,7 +44,7 @@ def unsuccessful_response(opts = {})
       </samlp:LogoutResponse>"
 end
 
-def invalid_xml_response
+def invalid_xml_logout_response_document
   "<samlp:SomethingAwful
         xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\"
         ID=\"#{random_id}\" Version=\"2.0\">
@@ -55,7 +55,7 @@ def settings
   @settings ||= OneLogin::RubySaml::Settings.new(
       {
           :assertion_consumer_service_url => "http://app.muda.no/sso/consume",
-          :assertion_consumer_logout_service_url => "http://app.muda.no/sso/consume_logout",
+          :single_logout_service_url => "http://app.muda.no/sso/consume_logout",
           :issuer => "http://app.muda.no",
           :sp_name_qualifier => "http://sso.muda.no",
           :idp_sso_target_url => "http://sso.muda.no/sso",
