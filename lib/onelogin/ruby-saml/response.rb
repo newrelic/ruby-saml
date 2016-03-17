@@ -574,7 +574,7 @@ module OneLogin
           return append_error(error_msg, soft)
         end
         #binding.pry
-        if not_on_or_after && now >= (not_on_or_after + allowed_clock_drift)
+        if not_on_or_after && now >= (not_on_or_after)
           error_msg = "Current time is on or after NotOnOrAfter condition (#{now} >= #{not_on_or_after + allowed_clock_drift})"
           return append_error(error_msg, soft)
         end
