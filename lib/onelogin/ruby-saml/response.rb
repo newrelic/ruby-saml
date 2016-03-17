@@ -1,10 +1,8 @@
 require "xml_security"
 require "onelogin/ruby-saml/attributes"
-
 require "time"
 require "nokogiri"
 
-require "pry"
 # Only supports SAML 2.0
 module OneLogin
   module RubySaml
@@ -303,8 +301,6 @@ module OneLogin
         return options[:allowed_clock_drift] || 0
       end
 
-      
-
       # Validates the SAML Response (calls several validation methods)
       # @return [Boolean] True if the SAML Response is valid, otherwise False if soft=True
       # @raise [ValidationError] if soft == false and validation fails
@@ -333,9 +329,6 @@ module OneLogin
         validate_issuer &&
         validate_session_expiration &&
         validate_subject_confirmation &&
-  #      validate_structure(soft)        &&
-  #      validate_response_state(soft)   &&
-  #      validate_conditions(soft)       &&
         validate_signature(soft) &&
         validate_audience
       end
@@ -373,6 +366,9 @@ module OneLogin
         true
       end
 
+      # Validates the Destination, (If the SAML Response is received where expected)
+      # If fails, the error is added to the errors array
+      # @return [Boolean] True if there is a Destination element that matches the Consumer Service URL, otherwise False
       def validate_destination(soft = true)
        valid = settings.destination_validator.valid?(destination, settings.assertion_consumer_service_url)
         unless valid
@@ -381,25 +377,6 @@ module OneLogin
         true
       end
 
-
-            # Validates the Destination, (If the SAML Response is received where expected)
-      # If fails, the error is added to the errors array
-      # @return [Boolean] True if there is a Destination element that matches the Consumer Service URL, otherwise False
-      #
-#      def validate_destination
-#        return true if destination.nil? || destination.empty? || settings.assertion_consumer_service_url.nil? || settings.assertion_consumer_service_url.empty?
-#
-#        unless destination == settings.assertion_consumer_service_url
-#          error_msg = "The response was received at #{destination} instead of #{settings.assertion_consumer_service_url}"
-#          return append_error(error_msg)
-#        end
-#
-#        true
-#      end
-      # Validates the Status of the SAML Response
-      # @return [Boolean] True if the SAML Response contains a Success code, otherwise False if soft == false
-      # @raise [ValidationError] if soft == false and validation fails
-      #
       def validate_success_status
         return true if success?
           
@@ -497,7 +474,6 @@ module OneLogin
         true
       end
 
-
       # Validates the Signed elements
       # If fails, the error is added to the errors array
       # @return [Boolean] True if there is 1 or 2 Elements signed in the SAML Response
@@ -555,8 +531,6 @@ module OneLogin
         true
       end
 
-
-
       # Validates the Conditions. (If the response was initialized with the :skip_conditions option, this validation is skipped,
       # If the response was initialized with the :allowed_clock_drift option, the timing validations are relaxed by the allowed_clock_drift value)
       # @return [Boolean] True if satisfies the conditions, otherwise False if soft=True
@@ -573,7 +547,7 @@ module OneLogin
           error_msg = "Current time is earlier than NotBefore condition #{(now + allowed_clock_drift)} < #{not_before})"
           return append_error(error_msg, soft)
         end
-        #binding.pry
+
         if not_on_or_after && now >= (not_on_or_after)
           error_msg = "Current time is on or after NotOnOrAfter condition (#{now} >= #{not_on_or_after + allowed_clock_drift})"
           return append_error(error_msg, soft)
